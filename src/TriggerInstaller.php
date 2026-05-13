@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace SQLiteEvents;
 
-use PDO;
-
 final class TriggerInstaller
 {
     public function __construct(
-        private readonly PDO $pdo,
+        private readonly \PDO $pdo,
         private readonly string $eventTable,
     ) {
     }
@@ -42,22 +40,22 @@ final class TriggerInstaller
     }
 
     /**
-     * @return list<string>
+     * @return array<string>
      */
     private function tables(): array
     {
         $tableList = $this->pdo->query('PRAGMA table_list');
 
-        if ($tableList !== false) {
+        if (false !== $tableList) {
             $tables = [];
 
-            foreach ($tableList->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            foreach ($tableList->fetchAll(\PDO::FETCH_ASSOC) as $row) {
                 $name = (string) $row['name'];
 
                 if (
                     ($row['schema'] ?? null) === 'main'
                     && ($row['type'] ?? null) === 'table'
-                    && $name !== 'sqlite_schema'
+                    && 'sqlite_schema' !== $name
                     && $name !== $this->eventTable
                     && !str_starts_with($name, 'sqlite_')
                 ) {
@@ -80,14 +78,14 @@ final class TriggerInstaller
         );
         $statement->execute([':eventTable' => $this->eventTable]);
 
-        return array_map('strval', $statement->fetchAll(PDO::FETCH_COLUMN));
+        return array_map('strval', $statement->fetchAll(\PDO::FETCH_COLUMN));
     }
 
     private function installForTable(string $table): void
     {
         $columns = $this->columns($table);
 
-        if ($columns === []) {
+        if ([] === $columns) {
             return;
         }
 
@@ -115,8 +113,11 @@ final class TriggerInstaller
     {
         $statement = $this->pdo->query(sprintf('PRAGMA table_info(%s)', SQLiteEventBus::quoteIdentifier($table)));
         $columns = [];
+        if (false === $statement) {
+            throw new \RuntimeException(sprintf('Failed to retrieve columns for table "%s".', $table));
+        }
 
-        foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        foreach ($statement->fetchAll(\PDO::FETCH_ASSOC) as $row) {
             $columns[] = [
                 'name' => (string) $row['name'],
                 'pk' => (int) $row['pk'],
@@ -149,10 +150,10 @@ final class TriggerInstaller
     ): string {
         $trigger = SQLiteEventBus::quoteIdentifier($this->triggerName($table, $action));
         $quotedTable = SQLiteEventBus::quoteIdentifier($table);
-        $rowAlias = $action === 'delete' ? 'OLD' : 'NEW';
+        $rowAlias = 'delete' === $action ? 'OLD' : 'NEW';
         $rowIdExpression = $withoutRowId ? 'NULL' : sprintf('CAST(%s."rowid" AS TEXT)', $rowAlias);
-        $oldPayload = $action === 'insert' ? 'NULL' : $this->jsonObjectExpression('OLD', $columns);
-        $newPayload = $action === 'delete' ? 'NULL' : $this->jsonObjectExpression('NEW', $columns);
+        $oldPayload = 'insert' === $action ? 'NULL' : $this->jsonObjectExpression('OLD', $columns);
+        $newPayload = 'delete' === $action ? 'NULL' : $this->jsonObjectExpression('NEW', $columns);
 
         return sprintf(
             'CREATE TRIGGER %s
@@ -179,7 +180,7 @@ final class TriggerInstaller
      */
     private function jsonObjectExpression(string $rowAlias, array $columns): string
     {
-        if ($columns === []) {
+        if ([] === $columns) {
             return 'json_object()';
         }
 
@@ -190,7 +191,7 @@ final class TriggerInstaller
             $parts[] = $this->jsonValueExpression($rowAlias, $column['name']);
         }
 
-        return 'json_object(' . implode(', ', $parts) . ')';
+        return 'json_object('.implode(', ', $parts).')';
     }
 
     private function jsonValueExpression(string $rowAlias, string $column): string
@@ -212,6 +213,6 @@ final class TriggerInstaller
 
     private function quoteLiteral(string $value): string
     {
-        return '\'' . str_replace('\'', '\'\'', $value) . '\'';
+        return '\''.str_replace('\'', '\'\'', $value).'\'';
     }
 }

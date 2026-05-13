@@ -7,7 +7,7 @@ namespace SQLiteEvents;
 final readonly class ChangeEvent
 {
     /**
-     * @param array<string, mixed> $primaryKey
+     * @param array<string, mixed>      $primaryKey
      * @param array<string, mixed>|null $old
      * @param array<string, mixed>|null $new
      */
@@ -34,7 +34,7 @@ final readonly class ChangeEvent
             id: (int) $row['id'],
             table: (string) $row['table_name'],
             action: (string) $row['action'],
-            rowId: $row['row_id'] === null ? null : (string) $row['row_id'],
+            rowId: null === $row['row_id'] ? null : (string) $row['row_id'],
             primaryKey: self::decodeJsonObject($row['primary_key'] ?? null),
             old: self::decodeNullableJsonObject($payload['old'] ?? null),
             new: self::decodeNullableJsonObject($payload['new'] ?? null),
@@ -47,7 +47,7 @@ final readonly class ChangeEvent
      */
     private static function decodeJsonObject(mixed $value): array
     {
-        if ($value === null || $value === '') {
+        if (null === $value || '' === $value) {
             return [];
         }
 
@@ -65,7 +65,7 @@ final readonly class ChangeEvent
      */
     private static function decodeNullableJsonObject(mixed $value): ?array
     {
-        if ($value === null) {
+        if (null === $value) {
             return null;
         }
 

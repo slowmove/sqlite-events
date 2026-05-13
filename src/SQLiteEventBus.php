@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace SQLiteEvents;
 
-use PDO;
-use Throwable;
-
 final class SQLiteEventBus
 {
     public const EVENT_TABLE = '__sqlite_events_log';
@@ -14,7 +11,7 @@ final class SQLiteEventBus
     private ListenerRegistry $listeners;
     private TriggerInstaller $installer;
 
-    public function __construct(private readonly PDO $pdo)
+    public function __construct(private readonly \PDO $pdo)
     {
         $this->listeners = new ListenerRegistry();
         $this->installer = new TriggerInstaller($pdo, self::EVENT_TABLE);
@@ -46,10 +43,10 @@ final class SQLiteEventBus
                 self::quoteIdentifier(self::EVENT_TABLE)
             )
         );
-        $select->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $select->bindValue(':limit', $limit, \PDO::PARAM_INT);
         $select->execute();
 
-        $rows = $select->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $select->fetchAll(\PDO::FETCH_ASSOC);
         $delete = $this->pdo->prepare(
             sprintf('DELETE FROM %s WHERE "id" = :id', self::quoteIdentifier(self::EVENT_TABLE))
         );
@@ -61,12 +58,12 @@ final class SQLiteEventBus
 
             try {
                 $this->listeners->dispatch($event);
-            } catch (Throwable $exception) {
+            } catch (\Throwable $exception) {
                 throw $exception;
             }
 
             $delete->execute([':id' => $event->id]);
-            $dispatched++;
+            ++$dispatched;
         }
 
         return $dispatched;
@@ -76,9 +73,12 @@ final class SQLiteEventBus
     {
         $this->ensureInstalled();
 
-        return (int) $this->pdo
-            ->query(sprintf('SELECT COUNT(*) FROM %s', self::quoteIdentifier(self::EVENT_TABLE)))
-            ->fetchColumn();
+        $pdoStatement = $this->pdo->query(sprintf('SELECT COUNT(*) FROM %s', self::quoteIdentifier(self::EVENT_TABLE)));
+        if (false === $pdoStatement) {
+            throw new \RuntimeException('Failed to count pending events.');
+        }
+
+        return (int) $pdoStatement->fetchColumn();
     }
 
     private function ensureInstalled(): void
@@ -88,19 +88,19 @@ final class SQLiteEventBus
 
     public static function quoteIdentifier(string $identifier): string
     {
-        return '"' . str_replace('"', '""', $identifier) . '"';
+        return '"'.str_replace('"', '""', $identifier).'"';
     }
 
     private function listenerName(string $table, ChangeAction $action): string
     {
-        if ($table === '*' && $action === ChangeAction::Any) {
+        if ('*' === $table && ChangeAction::Any === $action) {
             return '*';
         }
 
-        if ($table === '*') {
+        if ('*' === $table) {
             return $action->value;
         }
 
-        return $table . '.' . $action->value;
+        return $table.'.'.$action->value;
     }
 }
