@@ -6,12 +6,12 @@ $finder = (new PhpCsFixer\Finder())
 
 return (new PhpCsFixer\Config())
     ->setRules([
-        '@PHP54Migration' => true,
+        '@PHP5x4Migration' => true,
         '@PSR2' => true,
         '@PSR12' => true,
-        '@PHP70Migration' => true,
-        '@PHP71Migration' => true,
-        '@PHP74Migration' => true,
-        '@Symfony' => true
+        '@PHP7x0Migration' => true,
+        '@PHP7x1Migration' => true,
+        '@PHP7x4Migration' => true,
+        '@Symfony' => true,
     ])
     ->setFinder($finder);
