@@ -1,7 +1,7 @@
 <?php
 
 $finder = (new PhpCsFixer\Finder())
-    ->in([__DIR__.'/src'])
+    ->in([__DIR__ . '/src'])
     ->name('*.php');
 
 return (new PhpCsFixer\Config())
