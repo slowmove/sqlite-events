@@ -13,8 +13,21 @@ does not need an extra dispatch call.
 
 ## Install
 
+Add to your `composer.json`
+
+```json
+  "repositories": {
+    "sqlite-events": {
+      "type": "vcs",
+      "url": "git@github.com:Slowmove/sqlite-events.git"
+    },
+  }
+```
+
+then install
+
 ```bash
-composer require erikhoffman/sqlite-events
+composer require slowmove/sqlite-events
 ```
 
 For local development in this repository:

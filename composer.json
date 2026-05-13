@@ -1,5 +1,5 @@
 {
-    "name": "erikhoffman/sqlite-events",
+    "name": "slowmove/sqlite-events",
     "description": "A small PHP library that turns SQLite inserts, updates, and deletes into PHP events.",
     "version": "0.1.0",
     "type": "library",
