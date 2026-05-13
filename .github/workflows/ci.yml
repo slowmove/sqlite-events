@@ -1,0 +1,71 @@
+name: Tests and Static Analysis
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history
+          ref: ${{ github.head_ref }}  # Ensure correct PR branch
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Validate Composer Configuration
+        run: composer validate
+
+      - name: Install Composer Dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress --no-suggest
+
+      - name: Run Tests
+        run: composer test
+
+      - name: Run PHPStan Static Analysis
+        run: composer phpstan
+
+      - name: Get Changed PHP Files
+        id: changed-files
+        run: |
+          git fetch origin main
+          FILES=$(git diff --name-only origin/main | grep '\.php$' || true)
+          echo "changed_files=$(echo "$FILES" | paste -sd ' ' -)" >> $GITHUB_OUTPUT
+          echo "has_changes=$([ -n "$FILES" ] && echo true || echo false)" >> $GITHUB_OUTPUT
+
+      - name: Debug Changed Files
+        run: |
+          echo "Changed PHP Files: ${{ steps.changed-files.outputs.changed_files }}"
+
+      - name: Run PHP CS Fixer (Dry Run on PR Changes Only)
+        if: steps.changed-files.outputs.has_changes == 'true'
+        run: |
+          EXIT_CODE=0
+          for file in ${{ steps.changed-files.outputs.changed_files }}; do
+            if [ -f "$file" ]; then
+              echo "Checking $file"
+              ./vendor/bin/php-cs-fixer fix "$file" --dry-run --diff --stop-on-violation || EXIT_CODE=1
+            fi
+          done
+          exit $EXIT_CODE
+

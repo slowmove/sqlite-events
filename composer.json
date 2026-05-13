@@ -5,7 +5,7 @@
     "type": "library",
     "license": "MIT",
     "require": {
-        "php": ">=8.2",
+        "php": ">=8.3",
         "ext-pdo": "*",
         "ext-pdo_sqlite": "*"
     },
@@ -15,15 +15,22 @@
         }
     },
     "scripts": {
-        "test": "pest",
-        "test:unit": "pest --testsuite=Feature"
+        "test": "vendor/bin/pest",
+        "phpstan": "vendor/bin/phpstan analyse",
+        "php:cs:fixer": "vendor/bin/php-cs-fixer fix src"
     },
     "require-dev": {
-        "pestphp/pest": "^3.0"
+        "pestphp/pest": "4.4.*",
+        "friendsofphp/php-cs-fixer": "^3.88",
+        "phpstan/phpstan": "2.1.*"
     },
     "config": {
+        "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true
+        },
+        "platform": {
+            "php": "8.3"
         }
     }
 }
