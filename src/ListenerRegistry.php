@@ -35,8 +35,8 @@ final class ListenerRegistry
         $names = [
             '*',
             $event->action,
-            $event->table . '.*',
-            $event->table . '.' . $event->action,
+            $event->table.'.*',
+            $event->table.'.'.$event->action,
         ];
 
         $matching = [];

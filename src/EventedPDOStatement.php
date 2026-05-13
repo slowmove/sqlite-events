@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace SQLiteEvents;
 
-use PDOStatement;
-
-final class EventedPDOStatement extends PDOStatement
+final class EventedPDOStatement extends \PDOStatement
 {
     protected function __construct(private readonly EventedPDO $pdo)
     {
@@ -17,7 +15,7 @@ final class EventedPDOStatement extends PDOStatement
      */
     public function execute(?array $params = null): bool
     {
-        $executed = $params === null
+        $executed = null === $params
             ? parent::execute()
             : parent::execute($params);
 

@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace SQLiteEvents;
 
-use Closure;
-use PDO;
-use PDOStatement;
-
-final class EventedPDO extends PDO
+final class EventedPDO extends \PDO
 {
     private SQLiteEventBus $events;
     private int $autoDispatchSuppression = 0;
@@ -25,7 +21,7 @@ final class EventedPDO extends PDO
     ) {
         parent::__construct($dsn, $username, $password, $options ?? []);
 
-        $this->setAttribute(PDO::ATTR_STATEMENT_CLASS, [EventedPDOStatement::class, [$this]]);
+        $this->setAttribute(\PDO::ATTR_STATEMENT_CLASS, [EventedPDOStatement::class, [$this]]);
         $this->events = new SQLiteEventBus($this);
 
         if ($autoInstall) {
@@ -77,22 +73,22 @@ final class EventedPDO extends PDO
     {
         $result = parent::exec($statement);
 
-        if ($result !== false) {
+        if (false !== $result) {
             $this->dispatchAfterSuccessfulStatement();
         }
 
         return $result;
     }
 
-    public function query(string $query, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false
+    public function query(string $query, ?int $fetchMode = null, mixed ...$fetchModeArgs): \PDOStatement|false
     {
         $statement = match (true) {
-            $fetchMode === null => parent::query($query),
-            $fetchModeArgs === [] => parent::query($query, $fetchMode),
+            null === $fetchMode => parent::query($query),
+            [] === $fetchModeArgs => parent::query($query, $fetchMode),
             default => parent::query($query, $fetchMode, ...$fetchModeArgs),
         };
 
-        if ($statement !== false) {
+        if (false !== $statement) {
             $this->dispatchAfterSuccessfulStatement();
         }
 
@@ -127,18 +123,18 @@ final class EventedPDO extends PDO
     /**
      * @template T
      *
-     * @param Closure(): T $callback
+     * @param \Closure(): T $callback
      *
      * @return T
      */
-    private function withoutAutoDispatch(Closure $callback): mixed
+    private function withoutAutoDispatch(\Closure $callback): mixed
     {
-        $this->autoDispatchSuppression++;
+        ++$this->autoDispatchSuppression;
 
         try {
             return $callback();
         } finally {
-            $this->autoDispatchSuppression--;
+            --$this->autoDispatchSuppression;
         }
     }
 }
